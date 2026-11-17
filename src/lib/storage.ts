@@ -1,15 +1,13 @@
-import { Block, House, RecordItem, Relation, UserProfile } from "../types/nexo";
-import { isSupabaseConfigured, syncWithSupabase } from "./supabase";
+import { Block, House, RecordItem, Relation } from "../types/nexo";
 
 const STORAGE_KEYS = {
-  HOUSES: "nexo_houses_v2",
-  BLOCKS: "nexo_blocks_v2",
-  RECORDS: "nexo_records_v2",
-  RELATIONS: "nexo_relations_v2",
-  USER: "nexo_user_v2",
+  HOUSES: "nexo_houses_v3",
+  BLOCKS: "nexo_blocks_v3",
+  RECORDS: "nexo_records_v3",
+  RELATIONS: "nexo_relations_v3",
 };
 
-// Semilla de datos iniciales basada en el documento de especificación de NEXO:
+// Semilla de datos iniciales en Soles (S/)
 export const initialHouse: House = {
   id: "house-almacen-ventas",
   name: "Almacén y ventas",
@@ -24,11 +22,11 @@ export const initialBlocks: Block[] = [
     id: "block-productos",
     houseId: "house-almacen-ventas",
     name: "Productos",
-    description: "Catálogo de existencias y precios unitarios",
+    description: "Catálogo de existencias y precios unitarios en Soles (S/)",
     icon: "box",
     fields: [
       { id: "nombre", name: "Nombre del producto", type: "text", required: true },
-      { id: "precio", name: "Precio unitario", type: "currency", required: true, unit: "$" },
+      { id: "precio", name: "Precio unitario", type: "currency", required: true, unit: "S/" },
       { id: "stock", name: "Stock disponible", type: "number", required: true, unit: "uds." },
       { id: "categoria", name: "Categoría", type: "category", required: false, options: ["Insumos", "Textil", "Accesorios"] },
     ],
@@ -65,7 +63,7 @@ export const initialBlocks: Block[] = [
 ];
 
 export const initialRecords: RecordItem[] = [
-  // Productos en inventario
+  // Productos en inventario (precios en Soles S/)
   {
     id: "rec-p1",
     blockId: "block-productos",
@@ -79,7 +77,7 @@ export const initialRecords: RecordItem[] = [
     id: "rec-p2",
     blockId: "block-productos",
     houseId: "house-almacen-ventas",
-    data: { nombre: "Hilo blanco", precio: 3.75, stock: 8, categoria: "Insumos" }, // Alerta de stock bajo
+    data: { nombre: "Hilo blanco", precio: 3.75, stock: 8, categoria: "Insumos" },
     createdBy: "Marta Gómez",
     createdAt: "2026-11-10T12:05:00Z",
     updatedAt: "2026-11-10T12:05:00Z",
@@ -88,7 +86,7 @@ export const initialRecords: RecordItem[] = [
     id: "rec-p3",
     blockId: "block-productos",
     houseId: "house-almacen-ventas",
-    data: { nombre: "Botones de nácar", precio: 6.2, stock: 0, categoria: "Accesorios" }, // Alerta de agotado
+    data: { nombre: "Botones de nácar", precio: 6.2, stock: 0, categoria: "Accesorios" },
     createdBy: "Marta Gómez",
     createdAt: "2026-11-10T12:10:00Z",
     updatedAt: "2026-11-10T12:10:00Z",
@@ -150,7 +148,7 @@ export const initialRecords: RecordItem[] = [
     updatedAt: "2026-11-15T11:45:00Z",
   },
 
-  // Pedidos de proveedores (con caso de Rosa: pedidos de hilo atrasados)
+  // Pedidos de proveedores con atrasos
   {
     id: "rec-ped1",
     blockId: "block-pedidos",
@@ -208,49 +206,29 @@ function safeGetItem<T>(key: string, fallback: T[]): T[] {
   }
 }
 
-// Carga y guardado con persistencia
 export const storageService = {
   getHouses(): House[] {
     return safeGetItem(STORAGE_KEYS.HOUSES, [initialHouse]);
   },
-
   saveHouses(houses: House[]) {
-    try {
-      localStorage.setItem(STORAGE_KEYS.HOUSES, JSON.stringify(houses));
-      if (isSupabaseConfigured) syncWithSupabase("casas", "insert", houses);
-    } catch (e) {}
+    try { localStorage.setItem(STORAGE_KEYS.HOUSES, JSON.stringify(houses)); } catch (e) {}
   },
-
   getBlocks(): Block[] {
     return safeGetItem(STORAGE_KEYS.BLOCKS, initialBlocks);
   },
-
   saveBlocks(blocks: Block[]) {
-    try {
-      localStorage.setItem(STORAGE_KEYS.BLOCKS, JSON.stringify(blocks));
-      if (isSupabaseConfigured) syncWithSupabase("bloques", "insert", blocks);
-    } catch (e) {}
+    try { localStorage.setItem(STORAGE_KEYS.BLOCKS, JSON.stringify(blocks)); } catch (e) {}
   },
-
   getRecords(): RecordItem[] {
     return safeGetItem(STORAGE_KEYS.RECORDS, initialRecords);
   },
-
   saveRecords(records: RecordItem[]) {
-    try {
-      localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
-      if (isSupabaseConfigured) syncWithSupabase("registros", "insert", records);
-    } catch (e) {}
+    try { localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records)); } catch (e) {}
   },
-
   getRelations(): Relation[] {
     return safeGetItem(STORAGE_KEYS.RELATIONS, [initialRelation]);
   },
-
   saveRelations(relations: Relation[]) {
-    try {
-      localStorage.setItem(STORAGE_KEYS.RELATIONS, JSON.stringify(relations));
-      if (isSupabaseConfigured) syncWithSupabase("relaciones", "insert", relations);
-    } catch (e) {}
+    try { localStorage.setItem(STORAGE_KEYS.RELATIONS, JSON.stringify(relations)); } catch (e) {}
   },
 };

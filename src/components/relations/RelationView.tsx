@@ -261,7 +261,7 @@ export function RelationView({ onNavigate }: { onNavigate: (route: string) => vo
                       </td>
 
                       <td className="px-7 py-4 text-right font-bold text-[#008d89] text-base">
-                        {autoTotal !== undefined ? `$${Number(autoTotal).toFixed(2)}` : "—"}
+                        {autoTotal !== undefined ? `S/ ${Number(autoTotal).toFixed(2)}` : "—"}
                       </td>
                     </tr>
                   );

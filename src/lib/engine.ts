@@ -2,6 +2,7 @@ import { Block, FieldDefinition, JoinedRow, PriorityItem, RecordItem, Relation }
 
 /**
  * MOTOR DE LÓGICA DE NEGOCIO NEXO (Sin IA - Reglas deterministas)
+ * Moneda oficial: Soles (S/)
  */
 
 // 1. Cruce entre bloques (⋈ Relación tipo JOIN)
@@ -19,7 +20,6 @@ export function computeRelationJoin(
 
   if (!sourceField || !targetField) return [];
 
-  // Indexar registros fuente por clave común (normalizada a minúsculas)
   (sourceRecords || []).forEach((sRecord) => {
     const sData = sRecord?.data || {};
     const rawVal = sData[sourceField.id];
@@ -27,7 +27,6 @@ export function computeRelationJoin(
 
     const key = String(rawVal).trim().toLowerCase();
 
-    // Encontrar todos los registros del bloque destino que coincidan con esta clave
     const matches = (targetRecords || []).filter((tRecord) => {
       const tData = tRecord?.data || {};
       const tVal = tData[targetField.id];
@@ -35,7 +34,6 @@ export function computeRelationJoin(
       return String(tVal).trim().toLowerCase() === key;
     });
 
-    // Calcular valores derivados automáticamente por reglas
     const calculatedValues: Record<string, number | string> = {};
 
     if (relation.calculatedFields && relation.calculatedFields.length > 0) {
@@ -52,7 +50,6 @@ export function computeRelationJoin(
         }
       });
     } else {
-      // Inferencia automática por regla: si el bloque fuente tiene un campo tipo "currency" y el destino uno numérico ("cantidad"), calcular total
       const priceField = sourceBlock.fields.find((f) => f.type === "currency" || f.id.toLowerCase().includes("precio"));
       const qtyField = targetBlock.fields.find((f) => f.type === "number" || f.id.toLowerCase().includes("cantidad") || f.id.toLowerCase().includes("unidades"));
 
@@ -84,7 +81,6 @@ export function computePriorities(blocks: Block[], records: RecordItem[]): Prior
     if (!block || !block.fields) return;
     const blockRecords = (records || []).filter((r) => r && r.blockId === block.id);
 
-    // Buscar campos relevantes para alertas (stock, fecha de entrega, estado)
     const stockField = block.fields.find((f) => f.id.toLowerCase().includes("stock") || f.name.toLowerCase().includes("stock") || f.name.toLowerCase().includes("existencia"));
     const dateField = block.fields.find((f) => f.type === "date" || f.name.toLowerCase().includes("entrega") || f.name.toLowerCase().includes("vence"));
     const statusField = block.fields.find((f) => f.type === "status" || f.name.toLowerCase().includes("estado"));
@@ -102,7 +98,7 @@ export function computePriorities(blocks: Block[], records: RecordItem[]): Prior
             priorities.push({
               id: `${record.id}-stock-zero`,
               title,
-              subtitle: "Sin existencias en inventario",
+              subtitle: "Sin existencias en almacén",
               status: "danger",
               statusText: "Agotado",
               sourceBlockName: block.name,
@@ -113,7 +109,7 @@ export function computePriorities(blocks: Block[], records: RecordItem[]): Prior
             priorities.push({
               id: `${record.id}-stock-low`,
               title,
-              subtitle: `Quedan solo ${stockVal} ${stockField.unit || "unidades"}`,
+              subtitle: `Quedan solo ${stockVal} ${stockField.unit || "uds."}`,
               status: "warning",
               statusText: "Stock bajo",
               sourceBlockName: block.name,
@@ -128,10 +124,8 @@ export function computePriorities(blocks: Block[], records: RecordItem[]): Prior
       if (dateField && rData[dateField.id]) {
         const recordDate = new Date(String(rData[dateField.id]));
         if (!isNaN(recordDate.getTime())) {
-          // Diferencia en días
           const diffMs = now.getTime() - recordDate.getTime();
           const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
           const isCompleted = statusField && String(rData[statusField.id]).toLowerCase().includes("complet");
 
           if (!isCompleted && diffDays > 0) {
@@ -150,7 +144,7 @@ export function computePriorities(blocks: Block[], records: RecordItem[]): Prior
             priorities.push({
               id: `${record.id}-due-today`,
               title,
-              subtitle: "Compromiso programado para hoy",
+              subtitle: "Entrega programada para hoy",
               status: "warning",
               statusText: "Vence hoy",
               sourceBlockName: block.name,
@@ -162,14 +156,13 @@ export function computePriorities(blocks: Block[], records: RecordItem[]): Prior
         }
       }
 
-      // Si todo está normal, registrar estado verde (existencias suficientes o en regla)
       if (stockField && Number(rData[stockField.id]) >= 10) {
         priorities.push({
           id: `${record.id}-stock-ok`,
           title,
           subtitle: `Existencias: ${rData[stockField.id]} ${stockField.unit || "uds."}`,
           status: "success",
-          statusText: "Existencias suficientes",
+          statusText: "Stock óptimo",
           sourceBlockName: block.name,
           recordId: record.id,
         });
@@ -177,7 +170,6 @@ export function computePriorities(blocks: Block[], records: RecordItem[]): Prior
     });
   });
 
-  // Ordenar: primero los 'danger', luego 'warning', luego 'success'
   const rank: Record<string, number> = { danger: 0, warning: 1, neutral: 2, success: 3 };
   return priorities.sort((a, b) => {
     const diff = rank[a.status] - rank[b.status];
@@ -186,7 +178,7 @@ export function computePriorities(blocks: Block[], records: RecordItem[]): Prior
   });
 }
 
-// 3. Motor de Gráfico Automático (Épica E: regla fija sin IA)
+// 3. Motor de Gráfico Automático (Épica E: regla fija sin IA en Soles S/)
 export interface ChartBarData {
   label: string;
   value: number;
@@ -202,21 +194,18 @@ export function computeAutoChartData(blocks: Block[], records: RecordItem[]): {
   const safeBlocks = blocks || [];
   const safeRecords = records || [];
 
-  // Buscar bloque de ventas o transacciones
   const salesBlock = safeBlocks.find((b) => b?.name?.toLowerCase().includes("venta") || b?.name?.toLowerCase().includes("pedido")) || safeBlocks[1] || safeBlocks[0];
 
   if (!salesBlock || !salesBlock.fields) {
     return {
       chartTitle: "Actividad reciente",
       chartSubtitle: "Sin bloques registrados",
-      totalSumDisplay: "$0.00",
+      totalSumDisplay: "S/ 0.00",
       data: [],
     };
   }
 
   const blockRecords = safeRecords.filter((r) => r && r.blockId === salesBlock.id);
-
-  // Buscar campo numérico o de moneda
   const amountField = salesBlock.fields.find((f) => f.type === "currency" || f.type === "number");
   const labelField = salesBlock.fields.find((f) => f.type === "date") || salesBlock.fields.find((f) => f.type === "text") || salesBlock.fields[0];
 
@@ -227,18 +216,17 @@ export function computeAutoChartData(blocks: Block[], records: RecordItem[]): {
       return {
         label: day,
         value: simulatedVal,
-        displayValue: `$${(simulatedVal * 42).toLocaleString()}`,
+        displayValue: `S/ ${(simulatedVal * 42).toLocaleString()}`,
       };
     });
     return {
       chartTitle: "Ventas de la semana",
       chartSubtitle: "Visualización generada automáticamente",
-      totalSumDisplay: "$24.680",
+      totalSumDisplay: "S/ 24,680.00",
       data: fallbackData,
     };
   }
 
-  // Agrupar por etiqueta (fecha o nombre)
   let totalSum = 0;
   const groups: Record<string, number> = {};
 
@@ -259,14 +247,14 @@ export function computeAutoChartData(blocks: Block[], records: RecordItem[]): {
     return {
       label: k.length > 8 ? k.slice(0, 8) + "…" : k,
       value: Math.max(percentage, 10),
-      displayValue: amountField.type === "currency" ? `$${rawAmount.toFixed(2)}` : `${rawAmount}`,
+      displayValue: amountField.type === "currency" ? `S/ ${rawAmount.toFixed(2)}` : `${rawAmount}`,
     };
   });
 
   return {
     chartTitle: `Métricas de ${salesBlock.name}`,
     chartSubtitle: `Calculado en base a ${blockRecords.length} registros`,
-    totalSumDisplay: amountField.type === "currency" ? `$${totalSum.toLocaleString("es-PE", { minimumFractionDigits: 2 })}` : `${totalSum}`,
+    totalSumDisplay: amountField.type === "currency" ? `S/ ${totalSum.toLocaleString("es-PE", { minimumFractionDigits: 2 })}` : `${totalSum}`,
     data,
   };
 }

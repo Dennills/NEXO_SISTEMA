@@ -95,8 +95,8 @@ export function RecordFormModal({
               {/* Renderizar según tipo de campo */}
               {field.type === "currency" ? (
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-[#71827f]">
-                    $
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-[#71827f]">
+                    S/
                   </span>
                   <input
                     type="number"
@@ -106,7 +106,7 @@ export function RecordFormModal({
                     onChange={(e) => handleChange(field.id, e.target.value)}
                     onBlur={() => handleBlur(field.id)}
                     placeholder="0.00"
-                    className={`h-11 w-full rounded-xl border pl-8 pr-3 text-sm outline-none bg-white transition ${
+                    className={`h-11 w-full rounded-xl border pl-9 pr-3 text-sm outline-none bg-white transition ${
                       hasError ? "border-[#d85a30] bg-[#fffaf8]" : "border-[#cedcdc] focus:border-[#00aaa6]"
                     }`}
                   />

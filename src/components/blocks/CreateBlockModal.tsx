@@ -150,7 +150,7 @@ export function CreateBlockModal({
               >
                 <option value="text">Texto</option>
                 <option value="number">Número</option>
-                <option value="currency">Moneda ($)</option>
+                <option value="currency">Moneda (S/)</option>
                 <option value="date">Fecha</option>
                 <option value="status">Estado</option>
               </select>

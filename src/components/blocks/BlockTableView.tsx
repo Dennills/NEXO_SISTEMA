@@ -158,7 +158,7 @@ export function BlockTableView({
                         let rendered: any = val ?? "—";
 
                         if (f.type === "currency" && val !== undefined) {
-                          rendered = `$${Number(val).toFixed(2)}`;
+                          rendered = `S/ ${Number(val).toFixed(2)}`;
                         } else if (f.type === "number" && val !== undefined && f.unit) {
                           rendered = `${val} ${f.unit}`;
                         }
